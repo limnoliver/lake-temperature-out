@@ -1,4 +1,7 @@
-
+filter_lakes <- function(lakes, keep_lakes) {
+  out <- dplyr::filter(lakes, lake_name %in% keep_lakes)
+  return(sort(unique(out$group_id)))
+}
 get_group_ids <- function(group_info) {
   sort(unique(group_info$group_id))
 }

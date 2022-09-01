@@ -23,11 +23,11 @@ targets:
       - 2_process/out/2_pgdl_lake_tasks.ind
       - 2_process/out/iceflags_unzipped.yml
     # multi-state glm2 data release targets
-      - 2_process/out/2_glm2_pb0_unzipped.yml
-      - 2_process/out/2_glm2_pball_unzipped.yml
-      - 2_process/out/glm2_iceflags_unzipped.yml
+      #- 2_process/out/2_glm2_pb0_unzipped.yml
+      #- 2_process/out/2_glm2_pball_unzipped.yml
+      #- 2_process/out/glm2_iceflags_unzipped.yml
     # error estimation temp data targets
-      - 2_process/out/combined_obs_toha.csv
+      #- 2_process/out/combined_obs_toha.csv
   
 ##-- MN TOHA Data Release --##
   
@@ -35,6 +35,9 @@ targets:
     command: read_csv("1_fetch/out/lake_metadata.csv")
   sb_group_ids:
     command: get_group_ids(sb_group_info)
+    
+  sb_group_ids_keep:
+    command: filter_lakes(sb_group_info, keep = I(c('Mille Lacs Lake', 'Tenmile Lake')))
     
   morphometry:
     command: extract_morphometry("1_fetch/out/config.json")
@@ -46,40 +49,39 @@ targets:
   2_process/out/2_pgdl_grp_tasks_completed.yml:
     command: do_lakegroup_tasks(
       final_target =  target_name,
-      task_ids = sb_group_ids,
-      irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
-      clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
+      task_ids = sb_group_ids_keep,
+      irradiance_zips = '1_fetch/out/irradiance_downloaded.yml',
+      clarity_zips = '1_fetch/out/clarity_downloaded.yml',
       predictions_zips = '1_fetch/out/pgdl_temp_pred_downloaded.yml',
       '2_process/src/munge_group_files.R',
       '2_process/src/do_lakegroup_tasks.R')
-  
-  2_process/out/2_pb0_grp_tasks_completed.yml:
-    command: do_lakegroup_tasks(
-      final_target =  target_name,
-      task_ids = sb_group_ids,
-      irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
-      clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
-      predictions_zips = '1_fetch/out/pb0_temp_pred_downloaded.yml',
-      '2_process/src/munge_group_files.R',
-      '2_process/src/do_lakegroup_tasks.R')
+  # 
+  # 2_process/out/2_pb0_grp_tasks_completed.yml:
+  #   command: do_lakegroup_tasks(
+  #     final_target =  target_name,
+  #     task_ids = sb_group_ids,
+  #     irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
+  #     clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
+  #     predictions_zips = '1_fetch/out/pb0_temp_pred_downloaded.yml',
+  #     '2_process/src/munge_group_files.R',
+  #     '2_process/src/do_lakegroup_tasks.R')
   
   ### Calculate TOHA for each lake ###
   
-  2_process/out/2_pb0_lake_tasks.ind:
-    command: do_lake_toha_tasks(
-      final_target = target_name,
-      task_df_fn = '2_process/out/2_pb0_grp_tasks_completed.yml',
-      n_cores = 40,
-      '2_process/src/calculate_toha.R',
-      '2_process/src/do_lake_toha_tasks.R')
-    depends:
-      - morphometry
+  # 2_process/out/2_pb0_lake_tasks.ind:
+  #   command: do_lake_toha_tasks(
+  #     final_target = target_name,
+  #     task_df_fn = '2_process/out/2_pb0_grp_tasks_completed.yml',
+  #     n_cores = 40,
+  #     '2_process/src/calculate_toha.R',
+  #     '2_process/src/do_lake_toha_tasks.R')
+  #   depends:
+  #     - morphometry
 
   2_process/out/2_pgdl_lake_tasks.ind:
     command: do_lake_toha_tasks(
       final_target = target_name,
       task_df_fn = '2_process/out/2_pgdl_grp_tasks_completed.yml',
-      n_cores = 40,
       '2_process/src/calculate_toha.R',
       '2_process/src/do_lake_toha_tasks.R')
     depends:

@@ -2,9 +2,37 @@
 # Edited `mda.lakes` functions.
 
 calculate_toha_per_lake <- function(target_name, site_data_fn, morphometry) {
+
+  site_data <- feather::read_feather(site_data_fn) %>%
+    # filter to 5 years of data
+    filter(DateTime <= '2014-12-31' & DateTime >= '2010-01-01') %>%
+    mutate(year = lubridate::year(DateTime)) %>%
+    select(-starts_with('temp_'))
+  # add clarity scenarios
+  # can we just add a clarity scenario the long way?
   
-  site_data <- feather::read_feather(site_data_fn)
-  wtr_cols <- grep("temp_", names(site_data))
+  # say we want to estimate OH for average secchi of 0.5 to 10m with 0.5 intervals
+  scenario_kd = 1.7/seq(1, 10, 0.5)
+  
+  # calculate scenarios
+  
+  gen_kd_scenario <- function(target_kd) {
+    # find annual average and find multiplier to 
+    # mutliply each day
+    adj_kd <- site_data %>%
+      group_by(year) %>%
+      mutate(avg_kd = mean(kd),
+             kd = (target_kd/avg_kd)*kd,
+             scenario = target_kd) %>%
+      ungroup() %>%
+      select(-avg_kd)
+    
+    return(adj_kd)
+  }
+  
+  new_site_data <- purrr:::map_dfr(scenario_kd, gen_kd_scenario)
+  
+  #wtr_cols <- grep("temp_", names(site_data))
   
   # When adding obs data, some sites don't make it past the filtering criteria
   # so we need to skip them or toha calculations error weirdly
@@ -27,26 +55,26 @@ calculate_toha_per_lake <- function(target_name, site_data_fn, morphometry) {
       hypsos$depths[-1],
       hypsos$areas[-length(hypsos$areas)],
       hypsos$areas[-1]))
-    
-    toha_out <- purrr::map(1:nrow(site_data), function(r) {
+
+    toha_out <- purrr::map(1:nrow(new_site_data), function(r) {
       opti_thermal_habitat_subdaily(
-        current_date = site_data$DateTime[r],
-        wtr = site_data[r, wtr_cols], 
-        io = site_data$io[r], 
-        kd = site_data$kd[r], 
+        current_date = new_site_data$DateTime[r],
+        #wtr = site_data[r, wtr_cols], 
+        io = new_site_data$io[r], 
+        kd = new_site_data$kd[r], 
         lat = morphometry$latitude, 
         lon = morphometry$longitude, 
         hypsos = hypsos, 
         irr_thresh = c(0.0762, 0.6476), 
-        wtr_thresh = c(11,25),
+        #wtr_thresh = c(11,25),
         cum_ba = cum_benthic_area)
     }) %>% 
       bind_rows() %>% 
-      mutate(date = site_data$DateTime, .before = 1) %>% # Add the date column first (need dplyr > 1.0.0)
-      mutate(site_id = site_data$site_id, .before = 1) %>% # Add the site column first (need dplyr > 1.0.0)
+      mutate(scenario = new_site_data$scenario, .before = 1) %>%
+      mutate(date = new_site_data$DateTime, .before = 1) %>% # Add the date column first (need dplyr > 1.0.0)
+      mutate(site_id = new_site_data$site_id, .before = 1) %>% # Add the site column first (need dplyr > 1.0.0)
       readr::write_csv(file = target_name)
   }
-  
 }
 
 #' @title Calculate OHA, THA, and TOHA within table.
@@ -55,43 +83,39 @@ calculate_toha_per_lake <- function(target_name, site_data_fn, morphometry) {
 #'   interpolating the day into minutes.
 #'   
 #' @param current_date a single POSIXct value indicating the date
-#' @param wtr a data.frame with one row for the day and a column for each depth, 
-#' filled with daily water temperature values
 #' @param io the daily irradiance value
 #' @param kd the daily clarity value
 #' @param lat the latitude value (one value)
 #' @param lon the longitude value (one value)
 #' @param hypsos 
 #' @param irr_thresh
-#' @param wtr_thresh
 #' @param cum_ba cumulative sum of benthic areas from known hypsography
 #' 
 #' @return data.frame (1 row, 3 columns); columns are `opti_hab`, `therm_hab`, and `opti_therm_hab` 
 #' for optical habitat, thermal habitat, and optical thermal habitat, respectively.
 #' 
-opti_thermal_habitat_subdaily <- function(current_date, wtr, io, kd, lat, lon, hypsos, irr_thresh, wtr_thresh, cum_ba) {
-  
-  na_depth_profiles <- sapply(wtr, function(x) { all(is.na(x)) })
-  wtr_rmNA <- wtr[, !na_depth_profiles] # remove any temp profiles that are NA
-  
+opti_thermal_habitat_subdaily <- function(current_date, io, kd, lat, lon, hypsos, irr_thresh, cum_ba) {
+
+  #na_depth_profiles <- sapply(wtr, function(x) { all(is.na(x)) })
+  #wtr_rmNA <- wtr[, !na_depth_profiles] # remove any temp profiles that are NA
   io <- mda.lakes::create_irr_day_cycle(lat,lon, dates=current_date, irr_mean = io, by='min')
   
   oha_df <- optical_habitat_area(io[[2]], kd, hypsos, irr_thresh[1], irr_thresh[2], cum_ba)
-  tha_df <- thermal_habitat_area(wtr_rmNA, hypsos, wtr_thresh[1], wtr_thresh[2], cum_ba)
+  #tha_df <- thermal_habitat_area(wtr_rmNA, hypsos, wtr_thresh[1], wtr_thresh[2], cum_ba)
   
   # Upsample tha (repeat values) to match the number of oha values (subdaily)
   # Will even work if `nrow(wtr_rmNA) > 1`
-  tha_upsampled <- tha_df %>% slice(rep(1:n(), each = nrow(oha_df)))
-  toha <- thermal_optical_habitat_area(tha_upsampled, oha_df, hypsos, cum_ba)
+  #tha_upsampled <- tha_df %>% slice(rep(1:n(), each = nrow(oha_df)))
+  #toha <- thermal_optical_habitat_area(tha_upsampled, oha_df, hypsos, cum_ba)
   
   # Divide by number of timesteps to get average area per day
   oha_daily <- sum(oha_df$habitat)/nrow(oha_df) 
-  tha_daily <- tha_df$habitat/nrow(tha_df) # should be the same before/after division since tha_df is already daily
-  toha_daily <- sum(toha)/length(toha)
+  #tha_daily <- tha_df$habitat/nrow(tha_df) # should be the same before/after division since tha_df is already daily
+  #toha_daily <- sum(toha)/length(toha)
   
-  return(data.frame(opti_hab = oha_daily, 
-                    therm_hab = tha_daily, 
-                    opti_therm_hab = toha_daily))
+  return(data.frame(opti_hab = oha_daily))#, 
+                    #therm_hab = tha_daily, 
+                    #opti_therm_hab = toha_daily))
   
 }
 
@@ -327,7 +351,6 @@ calc_benthic_area_incl_hypso <- function(Z1, Z2, A1, A2, hypso, cum_ba) {
   
   # This function assumes hypso$depths and hypso$areas are sorted top to bottom
   # and Z1<Z2, A1>A2
-  
   stopifnot(length(Z1) == length(Z2))
   
   # Find which hypso depths are just above the Z1s & Z2s

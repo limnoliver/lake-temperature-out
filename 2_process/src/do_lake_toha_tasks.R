@@ -1,8 +1,8 @@
 
-do_lake_toha_tasks <- function(final_target, task_df_fn, n_cores, ...) {
+do_lake_toha_tasks <- function(final_target, task_df_fn, ...) {
   
   # Each node on a Yeti normal partition has a max of 20 cores; nodes on Yeti UV partition do not have that same limit
-  if(n_cores > 20) message("If using a node on the Yeti normal partition, you need to decrease n_cores to 20 or less")
+  #if(n_cores > 20) message("If using a node on the Yeti normal partition, you need to decrease n_cores to 20 or less")
   
   ##-- Define task table rows --##
   
@@ -78,8 +78,8 @@ do_lake_toha_tasks <- function(final_target, task_df_fn, n_cores, ...) {
   
   loop_tasks(task_plan = task_plan,
              task_makefile = task_makefile,
-             num_tries = 1, 
-             n_cores = n_cores)
+             num_tries = 1)#, 
+             #n_cores = n_cores)
   
   ##-- Clean up files created --##
   

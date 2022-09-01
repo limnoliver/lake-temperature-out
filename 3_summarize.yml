@@ -47,6 +47,15 @@ targets:
       files_to_zip_ind = '2_process/out/2_pgdl_lake_tasks.ind',
       dest_dir = I('3_summarize/tmp'),
       zip_out_prefix = I('pgdl_toha'))
+      
+  # create new summary that calculates annual optical habitat
+  # per year and clarity scenario
+  # and divides by total benthic area
+  3_summarize/out/oha_annual_scenarios.csv:
+    command: calc_annual_oha(
+      lake_crosswalk = '1_fetch/out/lake_metadata.csv',
+      files_to_munge_ind = '2_process/out/2_pgdl_lake_tasks.ind',
+      benthic_area = '3_summarize/out/total_benthic_areas.csv')
 
   ## Calculate total benthic area to use with TOHA areas --> TOHA as % Benthic Area ##
   
