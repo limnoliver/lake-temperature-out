@@ -12,7 +12,7 @@ calculate_toha_per_lake <- function(target_name, site_data_fn, morphometry) {
   # can we just add a clarity scenario the long way?
   
   # say we want to estimate OH for average secchi of 0.5 to 10m with 0.5 intervals
-  scenario_kd = 1.7/seq(1, 10, 0.5)
+  scenario_kd = 1.7/seq(0.25, 10, 0.25)
   
   # calculate scenarios
   

@@ -14,6 +14,7 @@ sources:
   - 2_process/src/do_lake_toha_tasks.R
   - 2_process/src/observed_data_helpers_prepare.R
   - 2_process/src/do_obs_lakes_tasks.R
+  - 2_process/src/clarity_estimates.R
 
 targets:
   2_process:
@@ -152,6 +153,11 @@ targets:
       target_name = target_name,
       data_file = "1_fetch/out/clarity_downloaded.yml",
       out_dir = I("2_process/tmp"))
+      
+  2_process/out/annual_clarity_modeled.csv:
+    command: summarize_clarity(
+      file_out = target_name,
+      files_in = '2_process/out/clarity_unzipped.yml')
   
   ## Split observed data into one file per lake ##
   2_process/out/observed_temperatures_split.yml:

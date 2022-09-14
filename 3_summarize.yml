@@ -12,6 +12,7 @@ sources:
   - 2_process/src/calculate_toha.R # Has the benthic area fxn & resample_hypso
   - 3_summarize/src/annual_thermal_metrics.R
   - 3_summarize/src/do_annual_thermal_metric_tasks.R
+  - 3_summarize/src/summarize_clarity_scenarios.R
 
 targets:
   3_summarize:
@@ -53,9 +54,22 @@ targets:
   # and divides by total benthic area
   3_summarize/out/oha_annual_scenarios.csv:
     command: calc_annual_oha(
+      out_file = target_name,
       lake_crosswalk = '1_fetch/out/lake_metadata.csv',
       files_to_munge_ind = '2_process/out/2_pgdl_lake_tasks.ind',
       benthic_area = '3_summarize/out/total_benthic_areas.csv')
+      
+  3_summarize/out/oha_by_lake_scenario.csv:
+    command: collapse_annual_oha(
+      out_file = target_name,
+      lake_crosswalk = '1_fetch/out/lake_metadata.csv',
+      data_in = '3_summarize/out/oha_annual_scenarios.csv')
+      
+  3_summarize/out/oha_metrics_by_lake.csv:
+    command: calc_oha_metrics(
+      oha_annual = '3_summarize/out/oha_annual_scenarios.csv',
+      mod_clarity = '2_process/out/annual_clarity_modeled.csv',
+      out_file = target_name)
 
   ## Calculate total benthic area to use with TOHA areas --> TOHA as % Benthic Area ##
   
