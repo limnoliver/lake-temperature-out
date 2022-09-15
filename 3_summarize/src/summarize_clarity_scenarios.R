@@ -66,7 +66,7 @@ calc_oha_metrics <- function(oha_annual, mod_clarity, out_file) {
   # for each year, calculate:
   # range of values > 5%
   # slope at peak OH
-  
+
   # metrics should characterize
   # 1) potential of the lake (e.g., if optimal clarity was achieved)
   # This includes range of secchi values where OH > 5% of total benthic
@@ -74,6 +74,7 @@ calc_oha_metrics <- function(oha_annual, mod_clarity, out_file) {
   # this includes the slope at the optimal clarity, and slope at current secchi
   
   optimal_clarity_all <- all_n %>%
+    mutate(secchi_scenario = round(secchi_scenario, 2)) %>% # some weird number issues on these scenarios
     group_by(site_id, print_name_unique, print_name, year) %>%
     mutate(optimal_clarity = perc_benthic_oha == max(perc_benthic_oha)) %>%
     left_join(select(clarity_2018, site_id, secchi_m_2018)) %>%
@@ -97,6 +98,22 @@ calc_oha_metrics <- function(oha_annual, mod_clarity, out_file) {
       slope_area_per_interval_d = c(NA, diff(annual_opti_hab)*-1), # by area
       slope_p_per_interval_d = c(NA, -1*100*(diff(annual_opti_hab)/annual_opti_hab[1:(length(annual_opti_hab)-1)]))
       )
+
+  # calculating per year and then taking the average
+  threshold_clarity_peryear <- all_n %>%
+    group_by(site_id, year) %>%
+    summarize(annual_min_clarity_5 = min(secchi_scenario[perc_benthic_oha >=5]),
+              annual_max_clarity_5 = max(secchi_scenario[perc_benthic_oha >=5]),
+              annual_clarity_window_width_5 = length(unique(secchi_scenario[perc_benthic_oha >=5]))*0.25,
+              annual_clarity_range_5 = annual_max_clarity_5 - annual_min_clarity_5)
+  
+  threshold_clarity_avg <- threshold_clarity_peryear %>%
+    ungroup() %>%
+    group_by(site_id) %>%
+    summarize(min_clarity_5PBOH = mean(annual_min_clarity_5),
+              max_clarity_5PBOH = mean(annual_max_clarity_5),
+              clarity_window_width_5PBOH = mean(annual_clarity_window_width_5),
+              clarity_range_5PBOH = mean(annual_clarity_range_5))
   
   annual_slope_metrics <- ungroup(slope) %>%
     group_by(site_id, year) %>%
@@ -130,7 +147,8 @@ calc_oha_metrics <- function(oha_annual, mod_clarity, out_file) {
     summarize(across(optimal_slope_pp_per_interval_i:y2018_slope_p_per_interval_d, 
               list(min = min, mean = mean, max = max), .names = "{.col}_{.fn}"),
               lake_area_km2 = unique(total_benthic_area)/1000000) %>%
-    left_join(distinct(select(all_n, site_id, print_name, print_name_unique)))
+    left_join(distinct(select(all_n, site_id, print_name, print_name_unique))) %>%
+    left_join(threshold_clarity_avg)
 
   readr::write_csv(lake_slope_metrics, out_file)
   
@@ -221,21 +239,7 @@ test <- function() {
   # window width is number of secchi values * 0.25 >= 5% OH, accounts for non-monotonic changes
   # clarity range assumes all values between min and max achieve >5% OH
   
-  # calculating per year and then taking the average
-  threshold_clarity_peryear <- all_n %>%
-    group_by(site_id, year) %>%
-    summarize(annual_min_clarity = min(secchi_scenario[perc_benthic_oha >=5]),
-              annual_max_clarity = max(secchi_scenario[perc_benthic_oha >=5]),
-              annual_clarity_window_width = length(unique(secchi_scenario[perc_benthic_oha >=5]))*0.25,
-              annual_clarity_range = annual_max_clarity - annual_min_clarity)
   
-  threshold_clarity_avg <- threshold_clarity_peryear %>%
-    ungroup() %>%
-    group_by(site_id) %>%
-    summarize(min_clarity = mean(annual_min_clarity),
-              max_clarity = mean(annual_max_clarity),
-              clarity_window_width = mean(annual_clarity_window_width),
-              clarity_range = mean(annual_clarity_range))
   
   
   

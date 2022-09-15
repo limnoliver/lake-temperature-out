@@ -50,7 +50,7 @@ targets:
   2_process/out/2_pgdl_grp_tasks_completed.yml:
     command: do_lakegroup_tasks(
       final_target =  target_name,
-      task_ids = sb_group_ids_keep,
+      task_ids = sb_group_ids,
       irradiance_zips = '1_fetch/out/irradiance_downloaded.yml',
       clarity_zips = '1_fetch/out/clarity_downloaded.yml',
       predictions_zips = '1_fetch/out/pgdl_temp_pred_downloaded.yml',
