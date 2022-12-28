@@ -56,28 +56,7 @@ targets:
       predictions_zips = '1_fetch/out/pgdl_temp_pred_downloaded.yml',
       '2_process/src/munge_group_files.R',
       '2_process/src/do_lakegroup_tasks.R')
-  # 
-  # 2_process/out/2_pb0_grp_tasks_completed.yml:
-  #   command: do_lakegroup_tasks(
-  #     final_target =  target_name,
-  #     task_ids = sb_group_ids,
-  #     irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
-  #     clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
-  #     predictions_zips = '1_fetch/out/pb0_temp_pred_downloaded.yml',
-  #     '2_process/src/munge_group_files.R',
-  #     '2_process/src/do_lakegroup_tasks.R')
-  
-  ### Calculate TOHA for each lake ###
-  
-  # 2_process/out/2_pb0_lake_tasks.ind:
-  #   command: do_lake_toha_tasks(
-  #     final_target = target_name,
-  #     task_df_fn = '2_process/out/2_pb0_grp_tasks_completed.yml',
-  #     n_cores = 40,
-  #     '2_process/src/calculate_toha.R',
-  #     '2_process/src/do_lake_toha_tasks.R')
-  #   depends:
-  #     - morphometry
+
 
   2_process/out/2_pgdl_lake_tasks.ind:
     command: do_lake_toha_tasks(
@@ -98,45 +77,45 @@ targets:
   
 ##-- Multi-state GLM2 Data Release --##
   
-  glm2_sb_group_info:
-    command: read_csv("1_fetch/out/glm2_lake_metadata.csv")
-  glm2_sb_group_ids:
-    command: get_group_ids(glm2_sb_group_info)
-    
-  glm2_pb0_morphometry:
-    command: extract_morphometry("1_fetch/out/glm2_pb0_config.json")  
-  glm2_pball_morphometry:
-    command: extract_morphometry("1_fetch/out/glm2_pball_config.json")
-  
-  ### Munge data by each lake group ###
-  
-  # Unzip each lake group file, then subset into a yml for pb0 and one for pball
-  
-  2_process/out/2_glm2_pb0_pball_unzipped.yml:
-    command: unzip_data(
-      target_name = target_name,
-      data_file = "1_fetch/out/glm2_pb0_pball_temp_pred_downloaded.yml",
-      out_dir = I("2_process/tmp_glm2"))
-      
-  2_process/out/2_glm2_pb0_unzipped.yml:
-    command: subset_yml(
-      target_name = target_name,
-      full_yml = "2_process/out/2_glm2_pb0_pball_unzipped.yml",
-      regex = I("pb0_"))
-  
-  2_process/out/2_glm2_pball_unzipped.yml:
-    command: subset_yml(
-      target_name = target_name,
-      full_yml = "2_process/out/2_glm2_pb0_pball_unzipped.yml",
-      regex = I("pball_"))
-  
-  # Prepare ice flags for use in 3_summary. Contains pb0 and pball 
-  # ice flags, but those are handled in 3_summarize with the regex.
-  2_process/out/glm2_iceflags_unzipped.yml:
-    command: unzip_data(
-      target_name = target_name,
-      data_file = "1_fetch/out/glm2_iceflags_downloaded.yml",
-      out_dir = I("2_process/tmp"))
+  # glm2_sb_group_info:
+  #   command: read_csv("1_fetch/out/glm2_lake_metadata.csv")
+  # glm2_sb_group_ids:
+  #   command: get_group_ids(glm2_sb_group_info)
+  #   
+  # glm2_pb0_morphometry:
+  #   command: extract_morphometry("1_fetch/out/glm2_pb0_config.json")  
+  # glm2_pball_morphometry:
+  #   command: extract_morphometry("1_fetch/out/glm2_pball_config.json")
+  # 
+  # ### Munge data by each lake group ###
+  # 
+  # # Unzip each lake group file, then subset into a yml for pb0 and one for pball
+  # 
+  # 2_process/out/2_glm2_pb0_pball_unzipped.yml:
+  #   command: unzip_data(
+  #     target_name = target_name,
+  #     data_file = "1_fetch/out/glm2_pb0_pball_temp_pred_downloaded.yml",
+  #     out_dir = I("2_process/tmp_glm2"))
+  #     
+  # 2_process/out/2_glm2_pb0_unzipped.yml:
+  #   command: subset_yml(
+  #     target_name = target_name,
+  #     full_yml = "2_process/out/2_glm2_pb0_pball_unzipped.yml",
+  #     regex = I("pb0_"))
+  # 
+  # 2_process/out/2_glm2_pball_unzipped.yml:
+  #   command: subset_yml(
+  #     target_name = target_name,
+  #     full_yml = "2_process/out/2_glm2_pb0_pball_unzipped.yml",
+  #     regex = I("pball_"))
+  # 
+  # # Prepare ice flags for use in 3_summary. Contains pb0 and pball 
+  # # ice flags, but those are handled in 3_summarize with the regex.
+  # 2_process/out/glm2_iceflags_unzipped.yml:
+  #   command: unzip_data(
+  #     target_name = target_name,
+  #     data_file = "1_fetch/out/glm2_iceflags_downloaded.yml",
+  #     out_dir = I("2_process/tmp"))
       
 ##-- Munge files for error estimation --##
 
@@ -166,59 +145,59 @@ targets:
       obs_zipfile = "1_fetch/out/temperature_observations.zip",
       split_file_prefix = I("2_process/tmp/split_obs_data"))
   
-  2_process/out/combined_obs_toha.csv:
-    command: do_obs_lake_tasks(
-      target_name = target_name,
-      task_df_fn = '2_process/out/observed_temperatures_split.yml', 
-      irr_df_fn = '2_process/out/irradiance_unzipped.yml',
-      k0_df_fn = '2_process/out/clarity_unzipped.yml',
-      obs_model = I('obs'),
-      "2_process/src/observed_data_helpers_munge.R", 
-      "2_process/src/calculate_toha.R",
-      "2_process/src/do_obs_lakes_tasks.R")
-    depends:
-      - morphometry
-  
-  ### Now calculate TOHA for PB0 matched to observed ###
-  
-  ## Split data into one file per lake ##
-  2_process/out/pb0_matched2obs_split.yml:
-    command: unzip_and_split_observed_data(
-      target_name = target_name,
-      obs_zipfile = "1_fetch/out/pb0_matched_to_observations.zip",
-      split_file_prefix = I("2_process/tmp/split_pb0_matched2obs_data"))
-  
-  2_process/out/combined_pb0_matched2obs_toha.csv:
-    command: do_obs_lake_tasks(
-      target_name = target_name,
-      task_df_fn = '2_process/out/pb0_matched2obs_split.yml', 
-      irr_df_fn = '2_process/out/irradiance_unzipped.yml',
-      k0_df_fn = '2_process/out/clarity_unzipped.yml',
-      obs_model = I('pb0_matched2obs'),
-      "2_process/src/observed_data_helpers_munge.R", 
-      "2_process/src/calculate_toha.R",
-      "2_process/src/do_obs_lakes_tasks.R")
-    depends:
-      - morphometry
-  
-  ### Now calculate TOHA for PGDL matched to observed ###
-  
-  ## Split data into one file per lake ##
-  2_process/out/pgdl_matched2obs_split.yml:
-    command: unzip_and_split_observed_data(
-      target_name = target_name,
-      obs_zipfile = "1_fetch/out/pgdl_matched_to_observations.zip",
-      split_file_prefix = I("2_process/tmp/split_pgdl_matched2obs_data"))
-  
-  2_process/out/combined_pgdl_matched2obs_toha.csv:
-    command: do_obs_lake_tasks(
-      target_name = target_name,
-      task_df_fn = '2_process/out/pgdl_matched2obs_split.yml', 
-      irr_df_fn = '2_process/out/irradiance_unzipped.yml',
-      k0_df_fn = '2_process/out/clarity_unzipped.yml',
-      obs_model = I('pgdl_matched2obs'),
-      "2_process/src/observed_data_helpers_munge.R", 
-      "2_process/src/calculate_toha.R",
-      "2_process/src/do_obs_lakes_tasks.R")
-    depends:
-      - morphometry
+  # 2_process/out/combined_obs_toha.csv:
+  #   command: do_obs_lake_tasks(
+  #     target_name = target_name,
+  #     task_df_fn = '2_process/out/observed_temperatures_split.yml', 
+  #     irr_df_fn = '2_process/out/irradiance_unzipped.yml',
+  #     k0_df_fn = '2_process/out/clarity_unzipped.yml',
+  #     obs_model = I('obs'),
+  #     "2_process/src/observed_data_helpers_munge.R", 
+  #     "2_process/src/calculate_toha.R",
+  #     "2_process/src/do_obs_lakes_tasks.R")
+  #   depends:
+  #     - morphometry
+  # 
+  # ### Now calculate TOHA for PB0 matched to observed ###
+  # 
+  # ## Split data into one file per lake ##
+  # 2_process/out/pb0_matched2obs_split.yml:
+  #   command: unzip_and_split_observed_data(
+  #     target_name = target_name,
+  #     obs_zipfile = "1_fetch/out/pb0_matched_to_observations.zip",
+  #     split_file_prefix = I("2_process/tmp/split_pb0_matched2obs_data"))
+  # 
+  # 2_process/out/combined_pb0_matched2obs_toha.csv:
+  #   command: do_obs_lake_tasks(
+  #     target_name = target_name,
+  #     task_df_fn = '2_process/out/pb0_matched2obs_split.yml', 
+  #     irr_df_fn = '2_process/out/irradiance_unzipped.yml',
+  #     k0_df_fn = '2_process/out/clarity_unzipped.yml',
+  #     obs_model = I('pb0_matched2obs'),
+  #     "2_process/src/observed_data_helpers_munge.R", 
+  #     "2_process/src/calculate_toha.R",
+  #     "2_process/src/do_obs_lakes_tasks.R")
+  #   depends:
+  #     - morphometry
+  # 
+  # ### Now calculate TOHA for PGDL matched to observed ###
+  # 
+  # ## Split data into one file per lake ##
+  # 2_process/out/pgdl_matched2obs_split.yml:
+  #   command: unzip_and_split_observed_data(
+  #     target_name = target_name,
+  #     obs_zipfile = "1_fetch/out/pgdl_matched_to_observations.zip",
+  #     split_file_prefix = I("2_process/tmp/split_pgdl_matched2obs_data"))
+  # 
+  # 2_process/out/combined_pgdl_matched2obs_toha.csv:
+  #   command: do_obs_lake_tasks(
+  #     target_name = target_name,
+  #     task_df_fn = '2_process/out/pgdl_matched2obs_split.yml', 
+  #     irr_df_fn = '2_process/out/irradiance_unzipped.yml',
+  #     k0_df_fn = '2_process/out/clarity_unzipped.yml',
+  #     obs_model = I('pgdl_matched2obs'),
+  #     "2_process/src/observed_data_helpers_munge.R", 
+  #     "2_process/src/calculate_toha.R",
+  #     "2_process/src/do_obs_lakes_tasks.R")
+  #   depends:
+  #     - morphometry

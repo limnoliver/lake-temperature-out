@@ -2,8 +2,7 @@ library(shiny)
 library(plotly)
 library(dplyr)
 library(tidyr)
-library(nycflights13)
-
+library(ggplot2)
 # read in data
 all_n <- readr::read_csv('3_summarize/out/oha_annual_scenarios.csv')
 years_collapsed <- readr::read_csv('3_summarize/out/oha_by_lake_scenario.csv')
@@ -17,9 +16,9 @@ meta <- readr::read_csv('1_fetch/out/lake_metadata.csv') %>%
   mutate(sad = area/depth)
 metrics <- left_join(metrics, meta)
 
-ggplot(years_collapsed, aes(x = secchi_scenario, y = avg_perc))+
-  geom_line(aes(color = print_name %in% 'Grindstone Lake', group = site_id)) +
-  scale_color_manual(values = c('gray', 'red'))
+ ggplot(years_collapsed, aes(x = secchi_scenario, y = avg_perc))+
+   geom_line(aes(color = print_name %in% 'Grindstone Lake', group = site_id)) +
+   scale_color_manual(values = c('gray', 'red'))
   
 
 #ui
@@ -56,7 +55,7 @@ server <- function(input, output){
       labs(x = 'Distance to optimal clarity (Secchi in m)', 
            y = 'Current OH as % of max OH',
            title = paste(input$select, 'highlighted in green.'),
-           shape = 'Current OH >5%\nbenthic area')
+           shape = 'Current\n%BAOH > 5%')
     ggplotly(p)
   })
   
@@ -73,9 +72,10 @@ server <- function(input, output){
       geom_hline(yintercept = 0, color = 'darkgray') +
       geom_vline(xintercept = 0, color = 'darkgray')+
       theme_bw() +
-      labs(x = 'Sensitivity to increase in secchi\n(PP change in %BOH/+0.25m Secchi)', 
+      labs(x = 'Current sensitivity to increase in secchi\n(PP change in %BOH/+0.25m Secchi)', 
            y = 'Current sensitivity to decrease in secchi\n(PP change in %BOH/-0.25m Secchi)',
-           title = paste(input$select, 'higlighted in green'))
+           title = paste(input$select, 'higlighted in green'),
+           shape = 'Current\n%BAOH > 5%')
     ggplotly(p)
   })
   
